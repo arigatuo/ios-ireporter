@@ -9,6 +9,7 @@
 #import "PhotoScreen.h"
 #import "API.h"
 #import "UIImage+REsize.h"
+#import "UIAlertView+error.h"
 
 @interface PhotoScreen(private)
 -(void)takePhoto;
@@ -66,6 +67,51 @@
     [self presentModalViewController:imagePickerController animated:YES];
 }
 
+-(void)effects{
+    CIImage *beginImage = [CIImage imageWithData:UIImagePNGRepresentation(photo.image)];
+    CIContext *context = [CIContext contextWithOptions:nil];
+    
+    CIFilter *filter = [CIFilter filterWithName:@"CISepiaTone"
+                                  keysAndValues:kCIInputImageKey,beginImage,
+                        @"inputIntensity", [NSNumber numberWithFloat:0.8], nil];
+    CIImage *outputImage = [filter outputImage];
+    
+    CGImageRef cgimg = [context createCGImage:outputImage fromRect:[outputImage extent]];
+    photo.image = [UIImage imageWithCGImage:cgimg];
+    
+    CGImageRelease(cgimg);
+}
+
+-(void)uploadPhoto{
+    [[API sharedInstance] commandWithParams:[NSMutableDictionary dictionaryWithObjectsAndKeys:@"upload", @"command",
+                                             UIImageJPEGRepresentation(photo.image,70), @"file",
+                                             fldTitle.text, @"title",
+                                             nil] onCompletion:^(NSDictionary *json){
+        if(![json objectForKey:@"error"]){
+            [[[UIAlertView alloc]initWithTitle:@"Success"
+                                       message:@"Your PHoto is uploaded"
+                                      delegate:nil
+                             cancelButtonTitle:@"ya"
+                             otherButtonTitles:nil] show];
+        }else{
+            NSString* errorMsg = [json objectForKey:@"error"];
+            [UIAlertView error:errorMsg];
+            
+            if([@"Authorization required" compare:errorMsg] == NSOrderedSame){
+                [self performSegueWithIdentifier:@"ShowLogin" sender:nil];
+            }
+        }
+    }];
+}
+
+-(void)logout{
+    [[API sharedInstance] commandWithParams:[NSMutableDictionary dictionaryWithObjectsAndKeys:@"logout", @"command", nil]
+                               onCompletion:^(NSDictionary *json){
+                                   [API sharedInstance].user = nil;
+                                   [self performSegueWithIdentifier:@"ShowLogin" sender:nil];
+                               }];
+}
+
 #pragma mark - Image Picker delegate methods
 -(void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info{
     UIImage *image = [info objectForKey:UIImagePickerControllerOriginalImage];
@@ -75,7 +121,7 @@
     [picker dismissModalViewControllerAnimated:NO];
 }
 
--(void)imagePIckerControllerDidCancel:(UIImagePickerController *)picker{
+-(void)imagePickerControllerDidCancel:(UIImagePickerController *)picker{
     [picker dismissModalViewControllerAnimated:NO];
 }
 

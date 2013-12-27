@@ -7,12 +7,31 @@
 //
 
 #import "StreamPhotoScreen.h"
+#import "API.h"
 
 @implementation StreamPhotoScreen
 
 @synthesize IdPhoto;
 
 #pragma mark - View lifecycle
+
+-(void)viewDidLoad{
+    API* api = [API sharedInstance];
+    
+    //load the caption of the selected photo
+    [api commandWithParams:[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                            @"stream",@"command",
+                            IdPhoto,@"IdPhoto",
+                            nil]
+              onCompletion:^(NSDictionary *json){
+                  NSLog(@"%@", json);
+                  NSArray* list = [json objectForKey:@"result"];
+                  NSDictionary* photo = [list objectAtIndex:0];
+                  lblTitle.text = [photo objectForKey:@"title"];
+              }];
+    NSURL* imageURL = [api urlForImageWithId:IdPhoto isThumb:NO];
+    [photoView setImageWithURL:imageURL];
+}
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {

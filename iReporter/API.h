@@ -15,4 +15,5 @@ typedef void(^JSONResponseBlock)(NSDictionary* json);
 +(API*)sharedInstance;
 -(BOOL)isAuthorized;
 -(void)commandWithParams:(NSMutableDictionary*)params onCompletion:(JSONResponseBlock)completionBlock;
+-(NSURL*) urlForImageWithId:(NSNumber*)IdPhoto isThumb:(BOOL)isThumb;
 @end

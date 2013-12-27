@@ -7,7 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
-
+#import "PhotoView.h"
 @interface StreamScreen : UIViewController
 {
     IBOutlet UIBarButtonItem* btnCompose;

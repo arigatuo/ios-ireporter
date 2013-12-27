@@ -7,6 +7,13 @@
 //
 
 #import "StreamScreen.h"
+#import "API.h"
+#import "PhotoView.h"
+#import "StreamPhotoScreen.h"
+@interface StreamScreen(private)
+-(void)refreshStream;
+-(void)showStream:(NSArray*)stream;
+@end
 
 @implementation StreamScreen
 
@@ -18,6 +25,7 @@
     self.navigationItem.title = @"iReporter stream";
     self.navigationItem.rightBarButtonItem = btnCompose;
     self.navigationItem.leftBarButtonItem = btnRefresh;
+    [self refreshStream];
 
 }
 
@@ -29,7 +37,45 @@
 
 -(IBAction)btnRefreshTapped
 {
-    
+    [self refreshStream];
 }
+
+-(void)refreshStream
+{
+    [[API sharedInstance] commandWithParams:[NSMutableDictionary dictionaryWithObjectsAndKeys:@"stream", @"command",nil]
+                               onCompletion:^(NSDictionary *json){
+                                   [self showStream:[json objectForKey:@"result"]];
+                               }];
+}
+
+-(void)showStream:(NSArray*)stream
+{
+    for(UIView* view in listView.subviews){
+        [view removeFromSuperview];
+    }
+    
+    for(int i=0;i<[stream count]; i++){
+        NSDictionary* photo = [stream objectAtIndex:i];
+        PhotoView* photoView = [[PhotoView alloc] initWithIndex:i andData:photo];
+        photoView.delegate = self;
+        [listView addSubview:photoView];
+    }
+    
+    int listHeight = ([stream count]/3+1) * (kThumbSide+kPadding);
+    [listView setContentSize:CGSizeMake(320,listHeight)];
+    [listView scrollRectToVisible:CGRectMake(0,0,10,10) animated:YES];
+}
+
+-(void)didSelectPhoto:(PhotoView*)sender{
+    [self performSegueWithIdentifier:@"ShowPhoto" sender:[NSNumber numberWithInt:sender.tag]];
+}
+
+-(void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender{
+    if([@"ShowPhoto" compare:segue.identifier] == NSOrderedSame){
+        StreamPhotoScreen* streamPhotoScreen = segue.destinationViewController;
+        streamPhotoScreen.IdPhoto = sender;
+    }
+}
+
 
 @end

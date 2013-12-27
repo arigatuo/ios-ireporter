@@ -46,12 +46,24 @@
 
 -(void)commandWithParams:(NSMutableDictionary*)params onCompletion:(JSONResponseBlock)completionBlock
 {
+    NSLog(@"%@", params);
+    NSData* uploadFile = nil;
+    if([params objectForKey:@"file"]){
+        uploadFile = (NSData*)[params objectForKey:@"file"];
+        [params removeObjectForKey:@"file"];
+    }
     NSMutableURLRequest *apiRequest =
     [self multipartFormRequestWithMethod:@"POST"
                                     path:kAPIPath
                               parameters:params
                constructingBodyWithBlock:^(id <AFMultipartFormData>formData){
                    //todo attach file if needed
+                   if(uploadFile){
+                       [formData appendPartWithFileData:uploadFile
+                                                   name:@"file"
+                                               fileName:@"photo.jpg"
+                                               mimeType:@"image/jpeg"];
+                   }
                }];
     AFJSONRequestOperation* operation = [[AFJSONRequestOperation alloc] initWithRequest: apiRequest];
     [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject){
@@ -60,6 +72,12 @@
         completionBlock([NSDictionary dictionaryWithObject:[error localizedDescription] forKey:@"error"]);
     }];
     [operation start];
+}
+
+-(NSURL*)urlForImageWithId:(NSNumber*)IdPhoto isThumb:(BOOL)isThumb{
+    NSString* urlString = [NSString stringWithFormat:@"%@/%@upload/%@%@.jpg",
+                           kAPIHost,kAPIPath,IdPhoto,(isThumb) ? @"-thumb" : @""];
+    return [NSURL URLWithString:urlString];
 }
 
 @end
